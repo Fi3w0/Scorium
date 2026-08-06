@@ -113,11 +113,7 @@ impl<'a> Parser<'a> {
                 Err(SyntaxError::ReservedWord { keyword: other.describe(), span: tok.span })
             }
             TokenKind::Eof => Err(SyntaxError::UnexpectedEof { context: context.to_string(), span: tok.span }),
-            other => Err(SyntaxError::UnexpectedToken {
-                expected: context.to_string(),
-                found: other.describe(),
-                span: tok.span,
-            }),
+            other => Err(SyntaxError::UnexpectedToken { expected: context.to_string(), found: other.describe(), span: tok.span }),
         }
     }
 
@@ -130,9 +126,7 @@ impl<'a> Parser<'a> {
     }
 
     fn to_comment(tok: &Token) -> Comment {
-        let TokenKind::Comment(text, style) = &tok.kind else {
-            unreachable!("to_comment called on a non-comment token")
-        };
+        let TokenKind::Comment(text, style) = &tok.kind else { unreachable!("to_comment called on a non-comment token") };
         Comment { text: text.clone(), block: matches!(style, CommentStyle::Block), span: tok.span }
     }
 
@@ -207,10 +201,7 @@ impl<'a> Parser<'a> {
             TokenKind::Include => self.parse_include()?,
             TokenKind::BareWord(_) => self.parse_leaf_node_or_call()?,
             TokenKind::Eof => {
-                return Err(SyntaxError::UnexpectedEof {
-                    context: "a node, leaf, or statement".into(),
-                    span: start,
-                })
+                return Err(SyntaxError::UnexpectedEof { context: "a node, leaf, or statement".into(), span: start })
             }
             other => {
                 return Err(SyntaxError::UnexpectedToken {
@@ -314,10 +305,7 @@ impl<'a> Parser<'a> {
 
     fn parse_return(&mut self) -> Result<ItemKind, SyntaxError> {
         self.bump(); // return
-        let ends_statement = matches!(
-            self.peek().kind,
-            TokenKind::End | TokenKind::Else | TokenKind::Elseif | TokenKind::Eof
-        );
+        let ends_statement = matches!(self.peek().kind, TokenKind::End | TokenKind::Else | TokenKind::Elseif | TokenKind::Eof);
         let value = if ends_statement { None } else { Some(self.parse_value()?) };
         Ok(ItemKind::Return(ReturnStmt { value }))
     }
@@ -492,7 +480,7 @@ impl<'a> Parser<'a> {
             TokenKind::ColorLit(hex) => Expr::new(ExprKind::Color(hex.clone()), tok.span),
             TokenKind::DurationLit(n, u) => Expr::new(ExprKind::Duration(*n, u.clone()), tok.span),
             TokenKind::QuotedString(s) => Expr::new(ExprKind::Str(StrLit::Quoted(s.clone())), tok.span),
-            TokenKind::BareWord(w) => Expr::new(ExprKind::Str(parse_interpolated(w, tok.span)), tok.span),
+            TokenKind::BareWord(w) => classify_bare_word(w, tok.span, false)?,
             TokenKind::LBracket => return Ok(Some(self.parse_list()?)),
             _ => return Ok(None),
         };
@@ -532,11 +520,7 @@ impl<'a> Parser<'a> {
                 Ok(parse_interpolated(&w, tok.span))
             }
             TokenKind::Eof => Err(SyntaxError::UnexpectedEof { context: context.to_string(), span: tok.span }),
-            other => Err(SyntaxError::UnexpectedToken {
-                expected: context.to_string(),
-                found: other.describe(),
-                span: tok.span,
-            }),
+            other => Err(SyntaxError::UnexpectedToken { expected: context.to_string(), found: other.describe(), span: tok.span }),
         }
     }
 
@@ -668,34 +652,46 @@ impl<'a> Parser<'a> {
                 Err(SyntaxError::AtInExpression { name, span: tok.span })
             }
             TokenKind::BareWord(w) => {
-                if let Some(name) = w.strip_prefix('$') {
-                    if name.chars().all(|c| c.is_alphanumeric() || c == '_') && !name.is_empty() {
-                        self.bump();
-                        return Err(SyntaxError::DollarInExpression { name: name.to_string(), span: tok.span });
-                    }
-                }
+                let expr = classify_bare_word(w, tok.span, true)?;
                 self.bump();
-                if let Some(dollar_pos) = w.find('$') {
-                    let _ = dollar_pos;
-                    return Ok(Expr::new(ExprKind::Str(parse_interpolated(w, tok.span)), tok.span));
-                }
-                if let Some((base, field)) = w.split_once('.') {
-                    let base_expr = Expr::new(ExprKind::Ident(base.to_string()), tok.span);
-                    return Ok(Expr::new(
-                        ExprKind::Member(Box::new(base_expr), field.to_string(), tok.span),
-                        tok.span,
-                    ));
-                }
-                Ok(Expr::new(ExprKind::Ident(w.clone()), tok.span))
+                Ok(expr)
             }
             TokenKind::Eof => Err(SyntaxError::UnexpectedEof { context: "an expression".into(), span: tok.span }),
-            other => Err(SyntaxError::UnexpectedToken {
-                expected: "an expression".into(),
-                found: other.describe(),
-                span: tok.span,
-            }),
+            other => {
+                Err(SyntaxError::UnexpectedToken { expected: "an expression".into(), found: other.describe(), span: tok.span })
+            }
         }
     }
+}
+
+/// Classifies a bare-word token into an expression: `$`-containing words
+/// interpolate into a string; a word with a dot splits into a member
+/// access (`primary.darken` -> `Member(Ident("primary"), "darken")` --
+/// whether `primary` is a real binding or this should fall back to the
+/// literal string `"primary.darken"` is decided at evaluation time, not
+/// here, since the parser can't know what's in scope); anything else is
+/// a plain identifier, resolved at evaluation time as a known
+/// variable/parameter/loop-var or, failing that, a literal string.
+///
+/// `in_expression` controls what a *pure* `$name` token (nothing else in
+/// the word) does: inside a real expression that's the documented error
+/// (`$name` cannot be used in an expression); in a single-token value
+/// position it's valid interpolation, same as `$name` mixed with other
+/// text (`$mod+Return`) always is.
+fn classify_bare_word(word: &str, span: Span, in_expression: bool) -> Result<Expr, SyntaxError> {
+    if let Some(name) = word.strip_prefix('$') {
+        if in_expression && !name.is_empty() && name.chars().all(|c| c.is_alphanumeric() || c == '_') {
+            return Err(SyntaxError::DollarInExpression { name: name.to_string(), span });
+        }
+    }
+    if word.contains('$') {
+        return Ok(Expr::new(ExprKind::Str(parse_interpolated(word, span)), span));
+    }
+    if let Some((base, field)) = word.split_once('.') {
+        let base_expr = Expr::new(ExprKind::Ident(base.to_string()), span);
+        return Ok(Expr::new(ExprKind::Member(Box::new(base_expr), field.to_string(), span), span));
+    }
+    Ok(Expr::new(ExprKind::Ident(word.to_string()), span))
 }
 
 /// Splits a bare word's text into literal and `$name` interpolation

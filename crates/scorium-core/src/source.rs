@@ -14,10 +14,7 @@ pub struct Source {
 
 impl Source {
     pub fn new(name: impl Into<Arc<str>>, text: impl Into<Arc<str>>) -> Self {
-        Self {
-            name: name.into(),
-            text: text.into(),
-        }
+        Self { name: name.into(), text: text.into() }
     }
 
     pub fn from_path(path: impl AsRef<Path>) -> std::io::Result<Self> {

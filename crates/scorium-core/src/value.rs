@@ -90,12 +90,7 @@ impl ColorValue {
         let bytes = |s: &str| u8::from_str_radix(s, 16).ok();
         match hex.len() {
             6 => Some(Self::rgb(bytes(&hex[0..2])?, bytes(&hex[2..4])?, bytes(&hex[4..6])?)),
-            8 => Some(Self::rgba(
-                bytes(&hex[0..2])?,
-                bytes(&hex[2..4])?,
-                bytes(&hex[4..6])?,
-                bytes(&hex[6..8])?,
-            )),
+            8 => Some(Self::rgba(bytes(&hex[0..2])?, bytes(&hex[2..4])?, bytes(&hex[4..6])?, bytes(&hex[6..8])?)),
             _ => None,
         }
     }
@@ -115,20 +110,12 @@ impl ColorValue {
     pub fn lighten(self, amount: f64) -> Self {
         let t = amount.clamp(0.0, 1.0);
         let mix = |c: u8| (c as f64 + (255.0 - c as f64) * t).round() as u8;
-        Self {
-            r: mix(self.r),
-            g: mix(self.g),
-            b: mix(self.b),
-            a: self.a,
-        }
+        Self { r: mix(self.r), g: mix(self.g), b: mix(self.b), a: self.a }
     }
 
     /// Returns a copy with the alpha channel replaced (`amount` in 0.0..=1.0).
     pub fn alpha(self, amount: f64) -> Self {
-        Self {
-            a: (amount.clamp(0.0, 1.0) * 255.0).round() as u8,
-            ..self
-        }
+        Self { a: (amount.clamp(0.0, 1.0) * 255.0).round() as u8, ..self }
     }
 
     pub fn to_hex(self, include_alpha: bool) -> String {

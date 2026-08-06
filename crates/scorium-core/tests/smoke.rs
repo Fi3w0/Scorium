@@ -48,11 +48,15 @@ fn nested_nodes() {
     assert_eq!(tls.name, "tls");
     let ItemKind::Leaf(cert) = &tls.body[1].kind else { panic!() };
     assert_eq!(cert.key, "certificate");
+    // `cert.pem` has a dot, so it parses as member access on `cert`; since
+    // `cert` isn't a defined variable, evaluation falls back to the
+    // literal string "cert.pem" (see scorium-lua's eval tests).
     match &cert.value.kind {
-        ExprKind::Str(StrLit::Bare(parts)) => {
-            assert_eq!(parts, &vec![StrPart::Lit("cert.pem".to_string())]);
+        ExprKind::Member(base, field, _) => {
+            assert!(matches!(&base.kind, ExprKind::Ident(n) if n == "cert"));
+            assert_eq!(field, "pem");
         }
-        other => panic!("expected bare string, got {other:?}"),
+        other => panic!("expected member access, got {other:?}"),
     }
 }
 
@@ -125,10 +129,13 @@ fn squeezed_multiply_is_an_error() {
 
 #[test]
 fn unspaced_plus_is_a_bare_string() {
-    // SUPER+Return must NOT error: `+`/`-` stay embeddable unspaced.
+    // SUPER+Return must NOT error: `+`/`-` stay embeddable unspaced. It
+    // parses as a plain identifier (no `$`, no `.`), which falls back to
+    // the literal string "SUPER+Return" at evaluation time since it's
+    // never a defined variable.
     let doc = parse_ok("key = SUPER+Return");
     let ItemKind::Leaf(leaf) = &doc.items[0].kind else { panic!() };
-    assert!(matches!(&leaf.value.kind, ExprKind::Str(_)));
+    assert!(matches!(&leaf.value.kind, ExprKind::Ident(n) if n == "SUPER+Return"));
 }
 
 #[test]
@@ -250,9 +257,7 @@ fn script_block_with_braces_and_lua_strings() {
 
 #[test]
 fn comments_are_preserved_as_trivia() {
-    let doc = parse_ok(
-        "# leading comment\nport = 8080 # trailing comment\n-- lua style\n--[[ block ]]\ntimeout = 5s",
-    );
+    let doc = parse_ok("# leading comment\nport = 8080 # trailing comment\n-- lua style\n--[[ block ]]\ntimeout = 5s");
     assert_eq!(doc.items.len(), 2);
     assert_eq!(doc.items[0].trivia.leading.len(), 1);
     assert!(doc.items[0].trivia.trailing.is_some());

@@ -200,9 +200,8 @@ impl<'a> Lexer<'a> {
         }
 
         if self.pos == start_pos {
-            let (len, kind, _) = self
-                .match_operator(self.pos)
-                .expect("scan_word_or_operator called on a non-word, non-operator character");
+            let (len, kind, _) =
+                self.match_operator(self.pos).expect("scan_word_or_operator called on a non-word, non-operator character");
             self.pos += len;
             return Ok(Token::new(kind, Span::new(start, self.pos as u32)));
         }
@@ -221,9 +220,7 @@ impl<'a> Lexer<'a> {
         let mut out = String::new();
         loop {
             match self.current() {
-                None => {
-                    return Err(SyntaxError::UnterminatedString { span: Span::new(start, self.pos as u32) })
-                }
+                None => return Err(SyntaxError::UnterminatedString { span: Span::new(start, self.pos as u32) }),
                 Some(c) if c == quote => {
                     self.advance();
                     break;
@@ -241,11 +238,7 @@ impl<'a> Lexer<'a> {
                             out.push('\\');
                             out.push(other);
                         }
-                        None => {
-                            return Err(SyntaxError::UnterminatedString {
-                                span: Span::new(start, self.pos as u32),
-                            })
-                        }
+                        None => return Err(SyntaxError::UnterminatedString { span: Span::new(start, self.pos as u32) }),
                     }
                 }
                 Some(c) => {
@@ -281,10 +274,7 @@ impl<'a> Lexer<'a> {
             self.advance();
         }
         let text = self.src[hash_end..self.pos].to_string();
-        Ok(Token::new(
-            TokenKind::Comment(text, CommentStyle::Hash),
-            Span::new(start, self.pos as u32),
-        ))
+        Ok(Token::new(TokenKind::Comment(text, CommentStyle::Hash), Span::new(start, self.pos as u32)))
     }
 
     /// `--` starts either a line comment or, if followed by `[[`, a Lua
@@ -296,18 +286,11 @@ impl<'a> Lexer<'a> {
             let body_start = self.pos;
             loop {
                 match self.current() {
-                    None => {
-                        return Err(SyntaxError::UnterminatedComment {
-                            span: Span::new(start, self.pos as u32),
-                        })
-                    }
+                    None => return Err(SyntaxError::UnterminatedComment { span: Span::new(start, self.pos as u32) }),
                     Some(']') if self.peek(1) == Some(']') => {
                         let text = self.src[body_start..self.pos].to_string();
                         self.pos += 2;
-                        return Ok(Token::new(
-                            TokenKind::Comment(text, CommentStyle::Block),
-                            Span::new(start, self.pos as u32),
-                        ));
+                        return Ok(Token::new(TokenKind::Comment(text, CommentStyle::Block), Span::new(start, self.pos as u32)));
                     }
                     _ => {
                         self.advance();
@@ -323,10 +306,7 @@ impl<'a> Lexer<'a> {
             self.advance();
         }
         let text = self.src[body_start..self.pos].to_string();
-        Ok(Token::new(
-            TokenKind::Comment(text, CommentStyle::DashDash),
-            Span::new(start, self.pos as u32),
-        ))
+        Ok(Token::new(TokenKind::Comment(text, CommentStyle::DashDash), Span::new(start, self.pos as u32)))
     }
 }
 

@@ -32,10 +32,7 @@ pub enum SyntaxError {
     },
 
     #[error("operators in expressions require spaces around them")]
-    #[diagnostic(
-        code(scorium::lex::squeezed_operator),
-        help("write `{suggestion}`, not `{original}`")
-    )]
+    #[diagnostic(code(scorium::lex::squeezed_operator), help("write `{suggestion}`, not `{original}`"))]
     SqueezedOperator {
         original: String,
         suggestion: String,
