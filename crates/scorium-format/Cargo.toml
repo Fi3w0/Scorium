@@ -1,0 +1,12 @@
+[package]
+name = "scorium-format"
+description = "Canonical, deterministic formatter for Scorium (.scor) source files."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+scorium-core = { workspace = true }

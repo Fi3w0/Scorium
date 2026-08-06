@@ -1,0 +1,15 @@
+[package]
+name = "scorium-lua"
+description = "Sandboxed Lua-powered evaluation runtime for Scorium: expressions, control flow, and includes."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+scorium-core = { workspace = true }
+mlua = { workspace = true }
+miette = { workspace = true }
+thiserror = { workspace = true }

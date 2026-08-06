@@ -1,0 +1,14 @@
+[package]
+name = "scorium-schema"
+description = "Schema definitions and validation for Scorium configuration documents."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+scorium-core = { workspace = true }
+miette = { workspace = true }
+thiserror = { workspace = true }

@@ -1,0 +1,30 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/scorium-core",
+    "crates/scorium-lua",
+    "crates/scorium-schema",
+    "crates/scorium-format",
+    "crates/scorium-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-PolyForm-Strict-1.0.0"
+repository = "https://github.com/fiw-labs/scorium"
+authors = ["Fiw Labs"]
+rust-version = "1.75"
+
+[workspace.dependencies]
+scorium-core = { path = "crates/scorium-core", version = "0.1.0" }
+scorium-lua = { path = "crates/scorium-lua", version = "0.1.0" }
+scorium-schema = { path = "crates/scorium-schema", version = "0.1.0" }
+scorium-format = { path = "crates/scorium-format", version = "0.1.0" }
+miette = { version = "7", features = ["fancy"] }
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+mlua = { version = "0.10", features = ["lua54", "vendored"] }
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
