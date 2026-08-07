@@ -13,8 +13,8 @@ members = [
 version = "0.1.0"
 edition = "2021"
 license = "LicenseRef-PolyForm-Strict-1.0.0"
-repository = "https://github.com/fiw-labs/scorium"
-authors = ["Fiw Labs"]
+repository = "https://github.com/Fi3w0/Scorium"
+authors = ["fi3w0"]
 rust-version = "1.75"
 
 [workspace.dependencies]

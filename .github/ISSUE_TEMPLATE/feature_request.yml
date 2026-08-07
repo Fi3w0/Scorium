@@ -1,0 +1,69 @@
+name: Feature request
+description: Propose a new language feature, host API, tooling improvement, or doc change.
+title: "feature: <short summary>"
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for thinking about how Scorium could be better.
+
+        Before proposing, please skim
+        [docs/ROADMAP.md](../../docs/ROADMAP.md) -- the feature may already be
+        listed as deferred. Note that Scorium is deliberately **not** trying to
+        be a general-purpose programming language (see ROADMAP's "Non-goals").
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: What kind of change is this?
+      options:
+        - Language feature (syntax / semantics)
+        - Host API (embedding, schema, host functions)
+        - Tooling (CLI, formatter, LSP)
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that Scorium makes hard or impossible today?
+      placeholder: |
+        I want to generate nine workspace nodes from one loop, but ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed shape
+      description: |
+        Show the `.scor` (or Rust) syntax you wish worked. Use a code fence.
+      placeholder: |
+        ```scor
+        for i = 1, 9 do
+            ...
+        end
+        ```
+      render: scor
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Workarounds, or other syntax you rejected and why.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: non-goals
+    attributes:
+      label: Non-goal check
+      options:
+        - label: This does not push Scorium toward being a general-purpose programming language.
+          required: true

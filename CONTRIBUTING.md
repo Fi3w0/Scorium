@@ -78,7 +78,7 @@ rebase before merging.
 ## Licensing of contributions
 
 By submitting a pull request, you agree to
-[CONTRIBUTOR_TERMS.md](./CONTRIBUTOR_TERMS.md), which grants Fiw Labs the
+[CONTRIBUTOR_TERMS.md](./CONTRIBUTOR_TERMS.md), which grants @fi3w0 the
 rights needed to maintain, distribute, relicense, and commercially license
 Scorium. Scorium is source-available under PolyForm Strict 1.0.0; it is **not
 OSI-approved open source**, and contributors must be comfortable with that.

@@ -8,7 +8,7 @@ alongside the [LICENSE](./LICENSE).
 "Scorium", the Scorium logo, the `.scor` file extension, the `scorium`
 command-line tool name, the `scorium-*` package names, and any related names,
 logos, wordmarks, and visual identity (collectively, the "Scorium Marks") are
-controlled by **Fiw Labs**.
+controlled by **@fi3w0**.
 
 The Scorium Marks identify the official Scorium project. They are not licensed
 for unrestricted use by the PolyForm Strict License or by any noncommercial
@@ -26,7 +26,7 @@ Without written permission, you may:
 
 ## What you may not do
 
-Without written permission from Fiw Labs, you may **not**:
+Without written permission from @fi3w0, you may **not**:
 
 - Use "Scorium" or a confusingly similar name for a project, product,
   package, binary, or service that is independent of the official Scorium
@@ -42,7 +42,7 @@ Without written permission from Fiw Labs, you may **not**:
 
 ## Official releases and status
 
-Only Fiw Labs, or maintainers it explicitly trusts in writing, may publish
+Only @fi3w0, or maintainers I explicitly trust in writing, may publish
 official Scorium releases, official binaries, or official package-registry
 publications. Anything else is unofficial.
 
@@ -56,7 +56,7 @@ a final logo or visual standard.
 ## Contact
 
 For permission to use the Scorium Marks beyond the allowances above, contact
-**Fiw Labs** through the project's primary communication channel.
+me directly at @fi3w0 (on GitHub, https://github.com/Fi3w0).
 
 ---
 

@@ -55,5 +55,5 @@ versions.
   with idempotent output, four-space indentation, comment preservation
   (leading and one trailing per item), and byte-for-byte `script { }` bodies.
 
-[Unreleased]: https://github.com/fiw-labs/scorium/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/fiw-labs/scorium/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Fi3w0/Scorium/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Fi3w0/Scorium/releases/tag/v0.1.0

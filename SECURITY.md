@@ -3,9 +3,9 @@
 ## Reporting a vulnerability
 
 If you believe you have found a security vulnerability in Scorium, **do not
-open a public issue**. Report it privately to Fiw Labs through the project's
-primary security contact (the repository's listed security contact, or the
-GitHub "Report a vulnerability" flow if available).
+open a public issue**. Report it privately to me at @fi3w0 -- open a private
+GitHub Security Advisory on the repository, or reach me directly on GitHub
+(https://github.com/Fi3w0).
 
 Please include:
 

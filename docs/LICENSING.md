@@ -61,7 +61,7 @@ source" is inaccurate; the accurate terms are:
 ## Why this model
 
 Scorium is developed openly and welcomes community contributions, but its
-owner (Fiw Labs) keeps the right to:
+owner (@fi3w0) keeps the right to:
 
 - control official releases and distributions;
 - offer a commercial license separately from the free noncommercial grant;
@@ -98,5 +98,5 @@ permissively-licensed code under those crates' terms.
 
 If your use of Scorium is anything more than personal learning, education,
 hobby, or local noncommercial testing -- or if you are unsure -- read the
-legal files and, for commercial use, contact Fiw Labs for a written
+legal files and, for commercial use, contact me directly at @fi3w0 for a written
 agreement.

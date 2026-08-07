@@ -6,10 +6,10 @@ subject to, the [LICENSE](./LICENSE) (PolyForm Strict License 1.0.0).
 ## Short version
 
 Scorium is free for personal, educational, hobby, and local noncommercial
-use. **Commercial use requires a separate written agreement with Fiw Labs.**
+use. **Commercial use requires a separate written agreement with @fi3w0.**
 
 If you are unsure whether your use is commercial, treat it as commercial and
-contact Fiw Labs before proceeding.
+contact @fi3w0 directly before proceeding.
 
 ## What counts as commercial use
 
@@ -39,16 +39,15 @@ them):
 
 ## How to obtain a commercial license
 
-To request a commercial license, contact **Fiw Labs** through the project's
-primary communication channel (the repository's listed contact or issue
-tracker). Be prepared to describe:
+To request a commercial license, contact me directly at @fi3w0 (on GitHub,
+https://github.com/Fi3w0). Be prepared to describe:
 
 - The product or service that will use Scorium.
 - How Scorium will be distributed (embedded library, binary, hosted, etc.).
 - The scale and expected number of users or deployments.
 
-Fiw Labs may grant, refuse, or attach conditions to a commercial license at
-its discretion. A commercial license may include redistribution rights,
+@fi3w0 may grant, refuse, or attach conditions to a commercial license at
+my discretion. A commercial license may include redistribution rights,
 patent grants, warranty terms, and support commitments that this license does
 not provide.
 

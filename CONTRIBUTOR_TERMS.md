@@ -17,9 +17,9 @@ You confirm that:
 - Your contribution does not, to your knowledge, infringe anyone else's
   intellectual-property rights.
 
-## 2. Rights you grant Fiw Labs
+## 2. Rights you grant @fi3w0
 
-You grant Fiw Labs a perpetual, worldwide, royalty-free, nonexclusive,
+You grant @fi3w0 a perpetual, worldwide, royalty-free, nonexclusive,
 irrevocable, transferable, sublicensable licence to do everything with your
 contribution and with Scorium containing it that the law permits, including
 to:
@@ -39,15 +39,15 @@ These rights cover your contribution both on its own and as part of Scorium.
 
 ## 3. No copyright assignment
 
-Unless you and Fiw Labs explicitly agree otherwise in writing, you **keep
+Unless you and @fi3w0 explicitly agree otherwise in writing, you **keep
 your copyright** in your contribution. What you grant is a broad licence, not
-an assignment of ownership. Fiw Labs will not claim that you assigned
+an assignment of ownership. @fi3w0 will not claim that you assigned
 copyright unless you have signed a separate assignment agreement.
 
 ## 4. Why these terms exist
 
 Scorium is source-available under PolyForm Strict 1.0.0, a license that does
-not allow unrestricted redistribution or commercial use. For Fiw Labs to keep
+not allow unrestricted redistribution or commercial use. For @fi3w0 to keep
 the project maintainable -- and to offer the commercial path in
 [COMMERCIAL.md](./COMMERCIAL.md) -- it needs the freedom to relicense and
 commercially license the whole of Scorium, including community contributions.
@@ -56,7 +56,7 @@ change or commercial agreement.
 
 ## 5. No obligation
 
-Fiw Labs is not obligated to accept, use, or distribute your contribution,
+@fi3w0 is not obligated to accept, use, or distribute your contribution,
 or to keep it in Scorium. Accepting a contribution does not create an
 employment, partnership, or agency relationship.
 

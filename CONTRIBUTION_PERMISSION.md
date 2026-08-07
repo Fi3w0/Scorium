@@ -26,7 +26,7 @@ permission, you may:
 
 ## What this permission does not allow
 
-Without separate written permission from Fiw Labs, this permission does
+Without separate written permission from @fi3w0, this permission does
 **not** allow:
 
 - **Independent maintained forks** -- public forks kept alive as separate

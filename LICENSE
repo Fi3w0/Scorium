@@ -5,7 +5,7 @@ SPDX-License-Identifier: PolyForm-Strict-1.0.0
 
 Reference: <https://polyformproject.org/licenses/strict/1.0.0>
 
-Copyright (c) Fiw Labs. All rights reserved.
+Copyright (c) @fi3w0. All rights reserved.
 
 ------------------------------------------------------------------------------
 IMPORTANT -- INITIAL TERMS, NOT LEGAL ADVICE
@@ -36,7 +36,7 @@ defined by the Open Source Initiative (OSI). In plain language:
   - You may NOT sell it, redistribute it, publish it to a package registry,
     ship independent binaries, or maintain a renamed public fork without
     written permission.
-  - The name "Scorium" and its branding are controlled by Fiw Labs.
+  - The name "Scorium" and its branding are controlled by @fi3w0.
 
 For commercial use, see COMMERCIAL.md. For contribution-focused permissions
 beyond this license, see CONTRIBUTION_PERMISSION.md. For contributor grants,
@@ -52,7 +52,8 @@ Full license terms
     related documentation, examples, fixtures, build files, and test
     materials made available by the licensor under this license.
 
-  - "Licensor" means Fiw Labs, the copyright holder of the Software.
+  - "Licensor" means @fi3w0, the project owner and copyright holder of the
+    Software.
 
   - "Contributor" means any person or entity who holds copyright in any part
     of the Software and grants rights under this license.
