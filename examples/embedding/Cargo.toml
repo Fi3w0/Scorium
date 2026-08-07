@@ -1,19 +1,19 @@
 [package]
-name = "scorium-cli"
-description = "The `scorium` command-line tool: check, fmt, parse, and eval for .scor files."
+name = "scorium-embedding-example"
+description = "A complete parse + evaluate + validate embedding of Scorium."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
+publish = false
 
 [[bin]]
-name = "scorium"
+name = "scorium-embedding-example"
 path = "src/main.rs"
 
 [dependencies]
 scorium-core = { workspace = true }
-scorium-format = { workspace = true }
 scorium-lua = { workspace = true }
-clap = { workspace = true }
+scorium-schema = { workspace = true }

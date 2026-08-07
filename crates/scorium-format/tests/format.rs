@@ -15,7 +15,10 @@ fn fmt(src: &str) -> String {
 fn assert_idempotent(src: &str) {
     let once = fmt(src);
     let twice = format(&parse(&once));
-    assert_eq!(once, twice, "formatting is not idempotent for input:\n{src}\n---\nfirst pass:\n{once}\n---\nsecond pass:\n{twice}");
+    assert_eq!(
+        once, twice,
+        "formatting is not idempotent for input:\n{src}\n---\nfirst pass:\n{once}\n---\nsecond pass:\n{twice}"
+    );
 }
 
 #[test]
@@ -97,7 +100,8 @@ fn variable_definitions_and_interpolation() {
 
 #[test]
 fn if_elseif_else_end() {
-    let src = "if environment == production then\nworkers = 8\nelseif environment == staging then\nworkers = 4\nelse\nworkers = 2\nend";
+    let src =
+        "if environment == production then\nworkers = 8\nelseif environment == staging then\nworkers = 4\nelse\nworkers = 2\nend";
     let out = fmt(src);
     assert_eq!(
         out,

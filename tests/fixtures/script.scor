@@ -1,0 +1,9 @@
+# A script block: raw Lua under the sandbox (math/string/table only).
+@items = 3
+
+script {local sum = 0
+    for i = 1, items do
+        sum = sum + i
+    end
+    total = sum
+}

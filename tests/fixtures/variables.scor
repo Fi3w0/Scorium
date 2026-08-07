@@ -1,0 +1,12 @@
+# Exercises variables, interpolation, and arithmetic in one small file.
+@mod = SUPER
+@base = 8
+
+binding = $mod+Return
+gaps = base * 2
+
+theme {
+    primary = #8EDDFF
+    accent = #101820CC
+    deep = primary.darken(0.35)
+}

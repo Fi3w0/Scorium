@@ -1,0 +1,14 @@
+# Every value type in one document, for formatter and eval fixtures.
+ints = 42
+floats = 1.5
+bools = true
+nothing = nil
+bare = hello
+quoted = "hello world"
+color = #8EDDFF
+alpha_color = #101820CC
+fast = 600ms
+slow = 1.5s
+minutes = 2m
+mixed_list = [one, two, "three four", 42, true]
+nested_list = [[a, b], [c, d]]

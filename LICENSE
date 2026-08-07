@@ -1,0 +1,158 @@
+PolyForm Strict License 1.0.0
+==============================
+
+SPDX-License-Identifier: PolyForm-Strict-1.0.0
+
+Reference: <https://polyformproject.org/licenses/strict/1.0.0>
+
+Copyright (c) Fiw Labs. All rights reserved.
+
+------------------------------------------------------------------------------
+IMPORTANT -- INITIAL TERMS, NOT LEGAL ADVICE
+------------------------------------------------------------------------------
+These are the initial project terms for Scorium. They have NOT been reviewed
+by a lawyer. Before any commercial licensing of Scorium, these terms -- the
+license, the contribution permission, the contributor terms, the commercial
+terms, and the trademark terms -- should receive professional legal review.
+Treat them as a good-faith statement of intent, not as a vetted legal
+instrument. See COMMERCIAL.md for commercial licensing.
+------------------------------------------------------------------------------
+
+Effective date: project inception (see the Git history for the first commit
+that introduced this file).
+
+Summary (non-binding -- the full terms below control)
+-----------------------------------------------------
+
+Scorium is "source-available" and "community-source", not open source as
+defined by the Open Source Initiative (OSI). In plain language:
+
+  - You may read, run, audit, and learn from the source.
+  - You may use Scorium for personal, educational, hobby, and local
+    noncommercial purposes.
+  - You may modify it privately for learning, testing, and experimentation.
+  - You may fork on GitHub to prepare a contribution back to the project.
+  - You may NOT use Scorium commercially without written permission.
+  - You may NOT sell it, redistribute it, publish it to a package registry,
+    ship independent binaries, or maintain a renamed public fork without
+    written permission.
+  - The name "Scorium" and its branding are controlled by Fiw Labs.
+
+For commercial use, see COMMERCIAL.md. For contribution-focused permissions
+beyond this license, see CONTRIBUTION_PERMISSION.md. For contributor grants,
+see CONTRIBUTOR_TERMS.md.
+
+
+Full license terms
+------------------
+
+## 1. Definitions
+
+  - "Software" means the Scorium source code, in any form, together with all
+    related documentation, examples, fixtures, build files, and test
+    materials made available by the licensor under this license.
+
+  - "Licensor" means Fiw Labs, the copyright holder of the Software.
+
+  - "Contributor" means any person or entity who holds copyright in any part
+    of the Software and grants rights under this license.
+
+  - "You" / "your" means any person or entity exercising rights under this
+    license.
+
+  - "Commercial use" means any use of the Software, in whole or in part, as
+    part of or in support of a commercial offering, paid product or service,
+    internal business operation, or any activity primarily directed toward
+    commercial advantage or monetary compensation. Personal learning,
+    education, academic research, and hobby use are not commercial use.
+
+  - "Contribution" means a modification or addition to the Software that you
+    intentionally submit to the Licensor for inclusion in Scorium, for
+    example via a pull request.
+
+## 2. Grant of copyright license
+
+Subject to the terms and conditions of this license, each Contributor grants
+you a nonexclusive, worldwide, royalty-free, nontransferable,
+nonsublicensable, perpetual license, for the duration of the copyrights they
+hold in the Software, to:
+
+  a. Use, run, and inspect the Software for personal, educational, hobby,
+     academic-research, and local noncommercial purposes;
+
+  b. Make and keep private modifications of the Software solely for your own
+     learning, testing, experimentation, and local noncommercial use; and
+
+  c. Prepare and publish a branch or fork of the Software on a shared
+     development platform (such as GitHub) whose primary purpose is to submit
+     a Contribution back to the Licensor, and to share patches derived from
+     the Software directly with the Scorium maintainers.
+
+## 3. Limits on the grant
+
+You may NOT, without prior written permission from the Licensor:
+
+  a. Use the Software for any Commercial use;
+
+  b. Sell, rent, lease, lend, or charge a fee for access to or use of the
+     Software;
+
+  c. Distribute, publish, mirror, or otherwise make the Software available
+     to any third party, in source, binary, or any other form, except as
+     expressly permitted by section 2(c);
+
+  d. Publish the Software, or a derivative of it, to any package registry
+     (for example crates.io, npm, PyPI) or distribution channel;
+
+  e. Build and distribute standalone binaries or packaged artifacts derived
+     from the Software to third parties;
+
+  f. Publicly maintain, under this or any other name, a renamed or
+     rebranded derivative of the Software that is independent of the official
+     Scorium project; or
+
+  g. Remove or alter any copyright, attribution, or license notice in the
+     Software, except as required to prepare a Contribution.
+
+Nothing in this license grants you any right to use the trade names,
+trademarks, service marks, or branding of the Licensor. See TRADEMARKS.md.
+
+## 4. Contributions
+
+Contributions you submit to the Scorium project are governed by
+CONTRIBUTOR_TERMS.md, which grants the Licensor the rights needed to
+maintain, distribute, relicense, and commercially license Scorium. By
+submitting a Contribution, you agree to those terms.
+
+## 5. No patent license
+
+This license grants no rights under any patent, and no patent license is
+implied by the grant in section 2.
+
+## 6. Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. IN NO EVENT
+SHALL THE LICENSOR OR ANY CONTRIBUTOR BE LIABLE TO YOU OR ANY THIRD PARTY
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES, OR FOR ANY LOSS OF DATA, PROFITS, OR GOODWILL, HOWEVER CAUSED AND
+UNDER ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT, ARISING IN ANY WAY OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.
+
+## 7. Termination
+
+This license terminates automatically if you breach any of its terms. Upon
+termination you must stop using the Software and destroy all copies in your
+possession or control, except that private modifications retained solely for
+your own noncommercial learning may be kept. Sections 1, 5, 6, and 8 survive
+termination.
+
+## 8. Governing language and order
+
+If these terms are translated, the English version controls. If the summary
+and the full terms conflict, the full terms control. If this license and
+another Scorium legal document (such as a separate commercial agreement)
+conflict, the document specifically agreed by the parties controls for the
+matter it covers.

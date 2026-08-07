@@ -6,6 +6,7 @@ members = [
     "crates/scorium-schema",
     "crates/scorium-format",
     "crates/scorium-cli",
+    "examples/embedding",
 ]
 
 [workspace.package]

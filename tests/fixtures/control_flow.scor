@@ -1,0 +1,23 @@
+# Conditions, elseif, else, and a loop in the same file.
+@env = staging
+
+if env == production then
+    server {
+        workers = 8
+    }
+elseif env == staging then
+    server {
+        workers = 4
+    }
+else
+    server {
+        workers = 2
+    }
+end
+
+for i = 1, 3 do
+    worker {
+        name = worker-$i
+        index = i
+    }
+end

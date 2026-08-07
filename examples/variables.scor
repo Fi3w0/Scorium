@@ -1,0 +1,13 @@
+# Variables and interpolation. `@name` defines a variable; `$name`
+# interpolates into a bare string; `name` (no marker) is the value in an
+# expression.
+@mod = SUPER
+@base = 8
+
+binding = $mod+Return
+gaps = base * 2
+
+theme {
+    primary = #8EDDFF
+    deep = primary.darken(0.25)
+}

@@ -1,0 +1,32 @@
+# EditorConfig -- keep basic style consistent across editors.
+# Rust formatting is owned by rustfmt (rustfmt.toml); this file covers the
+# non-Rust files (.scor, Markdown, YAML).
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.{rs,toml}]
+indent_size = 4
+
+[*.md]
+# Markdown: keep trailing whitespace -- two trailing spaces force a line
+# break in some renderers.
+trim_trailing_whitespace = false
+max_line_length = off
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.scor]
+# Matches scorium-format's canonical indentation (four spaces).
+indent_size = 4
+max_line_length = off
+
+[Makefile]
+indent_style = tab

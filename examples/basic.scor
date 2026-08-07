@@ -1,0 +1,8 @@
+# A plain declarative Scorium file: no variables, expressions, or control
+# flow. This is the surface a non-programmer writes and never has to leave.
+server {
+    host = localhost
+    port = 8080
+    timeout = 5s
+    enabled = true
+}

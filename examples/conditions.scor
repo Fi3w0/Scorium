@@ -1,0 +1,24 @@
+# Control flow: `if` / `elseif` / `else`. Conditions use the same
+# expression syntax as values, so a branch can compare a variable against
+# another value.
+@workers = 4
+
+if workers > 2 then
+    server {
+        host = localhost
+        workers = workers
+        enabled = true
+    }
+elseif workers == 0 then
+    server {
+        host = localhost
+        workers = 0
+        enabled = false
+    }
+else
+    server {
+        host = localhost
+        workers = 1
+        enabled = true
+    }
+end
