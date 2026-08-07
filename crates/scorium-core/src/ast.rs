@@ -21,6 +21,13 @@ pub struct Comment {
 pub struct Trivia {
     pub leading: Vec<Comment>,
     pub trailing: Option<Comment>,
+    /// Was there a blank line between the previous item (or the start of
+    /// its enclosing block) and this one in the original source? The
+    /// formatter reproduces at most one blank line where this is `true`,
+    /// which is what makes blank-line handling idempotent: reformatting
+    /// already-canonical output sees the same single blank line and
+    /// keeps it.
+    pub blank_line_before: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]

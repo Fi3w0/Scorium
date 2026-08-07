@@ -162,13 +162,20 @@ impl<'a> Parser<'a> {
 
     fn parse_document(&mut self) -> Result<Document, SyntaxError> {
         let mut items = Vec::new();
+        // The blank-line boundary is the end of the previous item, so the
+        // gap between two items is what gets measured, never the span of
+        // the item itself.
+        let mut boundary = 0u32;
         loop {
             self.attach_trailing(&mut items);
             let leading = self.collect_leading();
             if matches!(self.peek().kind, TokenKind::Eof) {
                 return Ok(Document { items, trailing: leading });
             }
-            items.push(self.parse_item(leading)?);
+            let next_start = leading.first().map(|c| c.span.start).unwrap_or_else(|| self.peek().span.start);
+            let blank = self.has_blank_line(boundary, next_start);
+            items.push(self.parse_item(leading, blank)?);
+            boundary = items.last().unwrap().span.end;
         }
     }
 
@@ -177,17 +184,31 @@ impl<'a> Parser<'a> {
     /// comments right before the closing keyword/brace).
     fn parse_block(&mut self, stop: &[TokenKind]) -> Result<(Vec<Item>, Vec<Comment>), SyntaxError> {
         let mut items = Vec::new();
+        let mut boundary = self.tokens[self.pos.min(self.last_index())].span.start;
         loop {
             self.attach_trailing(&mut items);
             let leading = self.collect_leading();
             if stop.iter().any(|k| self.check(k)) || matches!(self.peek().kind, TokenKind::Eof) {
                 return Ok((items, leading));
             }
-            items.push(self.parse_item(leading)?);
+            let next_start = leading.first().map(|c| c.span.start).unwrap_or_else(|| self.peek().span.start);
+            let blank = self.has_blank_line(boundary, next_start);
+            items.push(self.parse_item(leading, blank)?);
+            boundary = items.last().unwrap().span.end;
         }
     }
 
-    fn parse_item(&mut self, leading: Vec<Comment>) -> Result<Item, SyntaxError> {
+    /// Does the source contain a blank line (2+ newlines) between byte
+    /// offsets `start` and `end`? Used to decide `Trivia::blank_line_before`.
+    fn has_blank_line(&self, start: u32, end: u32) -> bool {
+        let (start, end) = (start as usize, end as usize);
+        if start >= end || end > self.src.len() {
+            return false;
+        }
+        self.src[start..end].matches('\n').count() >= 2
+    }
+
+    fn parse_item(&mut self, leading: Vec<Comment>, blank_line_before: bool) -> Result<Item, SyntaxError> {
         let start = self.current_span();
         let kind = match &self.peek().kind {
             TokenKind::At => self.parse_vardef()?,
@@ -213,7 +234,7 @@ impl<'a> Parser<'a> {
         };
         let end = self.tokens[self.pos.saturating_sub(1).min(self.last_index())].span;
         let span = start.join(end);
-        Ok(Item { kind, span, trivia: Trivia { leading, trailing: None } })
+        Ok(Item { kind, span, trivia: Trivia { leading, trailing: None, blank_line_before } })
     }
 
     // -- statements ---------------------------------------------------------
