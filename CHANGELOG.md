@@ -9,43 +9,7 @@ versions.
 
 ## [Unreleased]
 
-### Added
-- `scorium` command-line tool with `check`, `parse`, `fmt`, `fmt --check`,
-  and `eval` subcommands.
-- `examples/embedding/`, a complete parse + evaluate + validate example that
-  registers a host value and a host function and validates against a schema.
-- Example `.scor` files: `basic.scor`, `variables.scor`, `conditions.scor`,
-  `loops.scor`.
-- Project legal and branding files: `LICENSE` (PolyForm Strict 1.0.0),
-  `COMMERCIAL.md`, `TRADEMARKS.md`, `CONTRIBUTING.md`,
-  `CONTRIBUTION_PERMISSION.md`, `CONTRIBUTOR_TERMS.md`, `SECURITY.md`.
-- Project documentation under `docs/`: language guide, grammar, embedding,
-  diagnostics, security model, licensing, and roadmap.
-- CI workflow running `cargo fmt --check`, `cargo clippy`, `cargo test`, and
-  `cargo build` across the workspace.
-
-### Changed
-- `scorium-cli` now depends only on the crates and tools it actually uses.
-
-### Fixed
-- Preserve expression grouping when formatting, so `scorium fmt` cannot
-  change precedence or associativity.
-- Enforce include containment for absolute paths, `..` components, and
-  symlink escapes under the default policy.
-- Expose registered native and Lua host functions inside isolated
-  `script { }` environments without leaking global or library mutations.
-- Report integer overflow instead of wrapping or panicking, and compare
-  mixed integers/floats without precision loss.
-- Bound Lua memory and recursive Scorium function depth.
-- Preserve text following interpolated Unicode variable names.
-- Treat `script { }` contents as raw Lua during lexing, including compact
-  operators and Lua long-bracket strings/comments containing braces.
-
-### Notes
-- Scorium is source-available under PolyForm Strict 1.0.0 and is **not**
-  OSI-approved open source. See `docs/LICENSING.md`.
-
-## [0.1.0] - initial implementation
+## [0.1.0] - 2026-08-08
 
 ### Added
 - `scorium-core`: source handling, byte-offset spans, lexer, parser, AST,
@@ -68,6 +32,37 @@ versions.
 - `scorium-format`: canonical formatter rendering straight from the AST,
   with idempotent output, four-space indentation, comment preservation
   (leading and one trailing per item), and byte-for-byte `script { }` bodies.
+- `scorium` command-line tool with `check`, `parse`, `fmt`, `fmt --check`,
+  and `eval` subcommands.
+- `examples/embedding/`, a complete parse + evaluate + validate example that
+  registers a host value and a host function and validates against a schema.
+- Example `.scor` files: `basic.scor`, `variables.scor`, `conditions.scor`,
+  `loops.scor`.
+- Project legal and branding files: `LICENSE` (PolyForm Strict 1.0.0),
+  `COMMERCIAL.md`, `TRADEMARKS.md`, `CONTRIBUTING.md`,
+  `CONTRIBUTION_PERMISSION.md`, `CONTRIBUTOR_TERMS.md`, `SECURITY.md`.
+- Project documentation under `docs/`: language guide, grammar, embedding,
+  diagnostics, security model, licensing, and roadmap.
+- CI workflow running `cargo fmt --check`, `cargo clippy`, `cargo test`, and
+  `cargo build` across the workspace.
+
+### Fixed
+- Preserve expression grouping when formatting, so `scorium fmt` cannot
+  change precedence or associativity.
+- Enforce include containment for absolute paths, `..` components, and
+  symlink escapes under the default policy.
+- Expose registered native and Lua host functions inside isolated
+  `script { }` environments without leaking global or library mutations.
+- Report integer overflow instead of wrapping or panicking, and compare
+  mixed integers/floats without precision loss.
+- Bound Lua memory and recursive Scorium function depth.
+- Preserve text following interpolated Unicode variable names.
+- Treat `script { }` contents as raw Lua during lexing, including compact
+  operators and Lua long-bracket strings/comments containing braces.
+
+### Notes
+- Scorium is source-available under PolyForm Strict 1.0.0 and is **not**
+  OSI-approved open source. See `docs/LICENSING.md`.
 
 [Unreleased]: https://github.com/Fi3w0/Scorium/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/Fi3w0/Scorium/releases/tag/v0.1.0
