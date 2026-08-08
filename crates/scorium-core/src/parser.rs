@@ -354,47 +354,16 @@ impl<'a> Parser<'a> {
         Ok(ItemKind::FnDef(FnDef { name, name_span, params, body }))
     }
 
-    /// `script { ... }`: the body is captured as a raw source slice
-    /// between the braces, never tokenized as Scorium syntax. Brace
-    /// depth is tracked through the *already-lexed* token stream (which
-    /// still balances real `{`/`}` even inside Lua code, since comments
-    /// and quoted strings -- including Lua's `'...'` -- are consumed as
-    /// single tokens by the lexer) so this doesn't need a second lexer.
+    /// `script { ... }`: the lexer supplies one raw-body token whose span
+    /// was found with Lua-aware brace balancing. The original source slice
+    /// is retained byte-for-byte and never parsed as Scorium syntax.
     fn parse_script(&mut self) -> Result<ItemKind, SyntaxError> {
-        let script_start = self.current_span();
         self.bump(); // script
         self.expect(TokenKind::LBrace, "`{` to start the script body")?;
-        let body_start = self.tokens[self.pos].span.start;
-        let mut depth = 1usize;
-        let inner_end;
-        loop {
-            let tok = self.tokens.get(self.pos).cloned();
-            match tok {
-                None | Some(Token { kind: TokenKind::Eof, .. }) => {
-                    return Err(SyntaxError::UnexpectedEof {
-                        context: "`}` to close the `script` body".into(),
-                        span: script_start,
-                    })
-                }
-                Some(t) => {
-                    match t.kind {
-                        TokenKind::LBrace => depth += 1,
-                        TokenKind::RBrace => {
-                            depth -= 1;
-                            if depth == 0 {
-                                inner_end = t.span.start;
-                                self.pos += 1;
-                                break;
-                            }
-                        }
-                        _ => {}
-                    }
-                    self.pos += 1;
-                }
-            }
-        }
-        let raw = self.src[body_start as usize..inner_end as usize].to_string();
-        Ok(ItemKind::Script(ScriptBlock { raw, inner_span: Span::new(body_start, inner_end) }))
+        let body = self.expect(TokenKind::ScriptBody, "a script body")?;
+        self.expect(TokenKind::RBrace, "`}` to close the `script` body")?;
+        let raw = self.src[body.span.as_range()].to_string();
+        Ok(ItemKind::Script(ScriptBlock { raw, inner_span: body.span }))
     }
 
     fn parse_include(&mut self) -> Result<ItemKind, SyntaxError> {
@@ -738,7 +707,11 @@ fn parse_interpolated(text: &str, base_span: Span) -> StrLit {
             let start = bytes_base + i as u32 + 1;
             let span = Span::new(start, start + name_len as u32);
             parts.push(StrPart::Interp(name.to_string(), span));
-            for _ in 0..name_len {
+            // `name_len` is measured in bytes because it slices `rest`,
+            // while `chars` advances Unicode scalar values. Advancing by
+            // the byte length would skip punctuation/text after a name
+            // containing non-ASCII characters.
+            for _ in 0..name.chars().count() {
                 chars.next();
             }
         } else {

@@ -1,4 +1,6 @@
+use std::cell::Cell;
 use std::path::Path;
+use std::rc::Rc;
 
 use scorium_core::entry::Entry;
 use scorium_core::{Source, Value};
@@ -59,6 +61,12 @@ fn variable_and_interpolation() {
 }
 
 #[test]
+fn unicode_variable_interpolation_preserves_following_text() {
+    let entries = eval("@café = olé\nbinding = $café-x");
+    assert_eq!(leaf(&entries, "binding"), &Value::Str("olé-x".into()));
+}
+
+#[test]
 fn undefined_interpolation_is_an_error() {
     let kind = eval_err("binding = $nope+Return");
     assert!(matches!(kind, scorium_lua::EvalErrorKind::UndefinedInterpolation { .. }), "{kind:?}");
@@ -68,6 +76,28 @@ fn undefined_interpolation_is_an_error() {
 fn arithmetic_expression() {
     let entries = eval("@base_port = 8000\nport = base_port + 1");
     assert_eq!(leaf(&entries, "port"), &Value::Int(8001));
+}
+
+#[test]
+fn integer_overflow_is_a_diagnostic_instead_of_a_panic_or_wrap() {
+    let kind = eval_err("value = 9223372036854775807 + 1");
+    assert!(matches!(kind, scorium_lua::EvalErrorKind::ArithmeticOverflow { .. }), "{kind:?}");
+
+    let kind = eval_err("@min = -9223372036854775807 - 1\nvalue = -min");
+    assert!(matches!(kind, scorium_lua::EvalErrorKind::ArithmeticOverflow { .. }), "{kind:?}");
+}
+
+#[test]
+fn minimum_integer_modulo_negative_one_is_zero() {
+    let entries = eval("@min = -9223372036854775807 - 1\nvalue = min % -1");
+    assert_eq!(leaf(&entries, "value"), &Value::Int(0));
+}
+
+#[test]
+fn mixed_integer_float_comparisons_do_not_round_large_integers() {
+    let entries = eval("equal = 9007199254740993 == 9007199254740992.0\ngreater = 9007199254740993 > 9007199254740992.0");
+    assert_eq!(leaf(&entries, "equal"), &Value::Bool(false));
+    assert_eq!(leaf(&entries, "greater"), &Value::Bool(true));
 }
 
 #[test]
@@ -175,6 +205,18 @@ fn color_darken_method() {
 }
 
 #[test]
+fn color_methods_reject_missing_wrong_or_extra_arguments() {
+    for src in [
+        "primary = #8EDDFF\ndeep = primary.darken()",
+        "primary = #8EDDFF\ndeep = primary.darken(oops)",
+        "primary = #8EDDFF\ndeep = primary.darken(0.2, 0.3)",
+    ] {
+        let kind = eval_err(src);
+        assert!(matches!(kind, scorium_lua::EvalErrorKind::TypeError { .. }), "{kind:?}");
+    }
+}
+
+#[test]
 fn host_function_call_via_registry() {
     let entries = eval_with("terminal = select(kitty, alacritty, foot)", |rt| {
         rt.register_function("select", |args| {
@@ -208,6 +250,44 @@ fn script_block_cannot_spawn_processes() {
 fn script_block_can_use_math_and_string() {
     // Should not error: math/string/table are the only stdlibs exposed.
     let _entries = eval("script {\n    local x = math.floor(3.7)\n    local s = string.upper(\"hi\")\n}");
+}
+
+#[test]
+fn native_host_function_is_callable_from_script_blocks() {
+    let calls = Rc::new(Cell::new(0));
+    let observed = Rc::clone(&calls);
+    let _entries = eval_with("script {\n    notify(41)\n}", |rt| {
+        rt.register_function("notify", move |args| {
+            assert_eq!(args, &[Value::Int(41)]);
+            observed.set(observed.get() + 1);
+            Ok(Value::Nil)
+        });
+    });
+    assert_eq!(calls.get(), 1);
+}
+
+#[test]
+fn lua_host_function_is_callable_from_expressions_and_scripts() {
+    let mut runtime = Runtime::new().unwrap();
+    let double = runtime.lua().create_function(|_, value: i64| Ok(value * 2)).unwrap();
+    runtime.register_lua_function("double", double);
+    let source = Source::new("<test>", "value = double(21)\nscript {\n    assert(double(3) == 6)\n}");
+    let doc = scorium_core::parse(&source).unwrap();
+    let out = runtime.evaluate(&doc, &source, Path::new(".")).unwrap();
+    assert_eq!(leaf(&out.entries, "value"), &Value::Int(42));
+}
+
+#[test]
+fn script_globals_and_library_mutations_do_not_leak_between_blocks() {
+    let _entries = eval(
+        "script {\n    leaked = 1\n    math.abs = nil\n}\nscript {\n    assert(leaked == nil)\n    assert(math.abs(-1) == 1)\n}",
+    );
+}
+
+#[test]
+fn script_cannot_reach_shared_vm_state_through_base_functions() {
+    let _entries =
+        eval("script {\n    assert(collectgarbage == nil)\n    assert(getmetatable == nil)\n    assert(load == nil)\n}");
 }
 
 #[test]
@@ -253,10 +333,76 @@ fn includes_can_be_disabled_by_host() {
 }
 
 #[test]
+fn default_include_policy_rejects_absolute_paths() {
+    let dir = std::env::temp_dir().join(format!("scorium-test-absolute-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let target = dir.join("outside.scor");
+    std::fs::write(&target, "value = exposed\n").unwrap();
+    let src = format!("include {:?}", target.display().to_string());
+    let source = Source::new("<test>", src);
+    let doc = scorium_core::parse(&source).unwrap();
+    let runtime = Runtime::new().unwrap();
+    let err = runtime.evaluate(&doc, &source, &dir).expect_err("absolute include must be denied");
+    assert!(matches!(err.kind, scorium_lua::EvalErrorKind::IncludePathDenied { .. }), "{:?}", err.kind);
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn dots_inside_a_filename_are_not_parent_traversal() {
+    let dir = std::env::temp_dir().join(format!("scorium-test-dot-name-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("theme..scor"), "value = allowed\n").unwrap();
+    let source = Source::new("<test>", "include \"theme..scor\"");
+    let doc = scorium_core::parse(&source).unwrap();
+    let runtime = Runtime::new().unwrap();
+    let out = runtime.evaluate(&doc, &source, &dir).unwrap();
+    assert_eq!(leaf(&out.entries, "value"), &Value::Str("allowed".into()));
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[cfg(unix)]
+#[test]
+fn default_include_policy_rejects_symlink_escapes() {
+    use std::os::unix::fs::symlink;
+
+    let root = std::env::temp_dir().join(format!("scorium-test-symlink-{}", std::process::id()));
+    let base = root.join("base");
+    let outside = root.join("outside.scor");
+    std::fs::create_dir_all(&base).unwrap();
+    std::fs::write(&outside, "value = exposed\n").unwrap();
+    symlink(&outside, base.join("linked.scor")).unwrap();
+    let source = Source::new("<test>", "include \"linked.scor\"");
+    let doc = scorium_core::parse(&source).unwrap();
+    let runtime = Runtime::new().unwrap();
+    let err = runtime.evaluate(&doc, &source, &base).expect_err("symlink escape must be denied");
+    assert!(matches!(err.kind, scorium_lua::EvalErrorKind::IncludePathDenied { .. }), "{:?}", err.kind);
+    std::fs::remove_dir_all(&root).ok();
+}
+
+#[test]
 fn loop_budget_prevents_runaway_while() {
     let runtime = Runtime::with_options(RuntimeOptions { max_loop_iterations: 100, ..RuntimeOptions::default() }).unwrap();
     let source = Source::new("<test>", "local n = 0\nwhile true do\n    n = n + 1\nend");
     let doc = scorium_core::parse(&source).unwrap();
     let err = runtime.evaluate(&doc, &source, Path::new(".")).expect_err("expected loop budget error");
     assert!(matches!(err.kind, scorium_lua::EvalErrorKind::LoopBudgetExceeded { .. }));
+}
+
+#[test]
+fn call_depth_limit_prevents_recursive_function_stack_overflow() {
+    let runtime = Runtime::with_options(RuntimeOptions { max_function_call_depth: 16, ..RuntimeOptions::default() }).unwrap();
+    let source = Source::new("<test>", "fn recurse() {\n    return recurse()\n}\nvalue = recurse()");
+    let doc = scorium_core::parse(&source).unwrap();
+    let err = runtime.evaluate(&doc, &source, Path::new(".")).expect_err("expected recursive call limit");
+    assert!(matches!(err.kind, scorium_lua::EvalErrorKind::CallDepthExceeded { .. }), "{:?}", err.kind);
+}
+
+#[test]
+fn lua_memory_limit_prevents_unbounded_allocation() {
+    let runtime =
+        Runtime::with_options(RuntimeOptions { max_lua_memory_bytes: 512 * 1024, ..RuntimeOptions::default() }).unwrap();
+    let source = Source::new("<test>", "script {\n    local huge = string.rep(\"x\", 2 * 1024 * 1024)\n}");
+    let doc = scorium_core::parse(&source).unwrap();
+    let err = runtime.evaluate(&doc, &source, Path::new(".")).expect_err("expected Lua allocation to be bounded");
+    assert!(matches!(err.kind, scorium_lua::EvalErrorKind::ScriptError { .. }), "{:?}", err.kind);
 }

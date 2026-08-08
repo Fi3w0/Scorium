@@ -71,6 +71,7 @@ A diagnostic includes:
 | `scorium::eval::unknown_function` | A call to a name that is neither a host function nor a Scorium `fn`. |
 | `scorium::eval::type_error` | An operand had the wrong type for the operation. |
 | `scorium::eval::division_by_zero` | Division or modulo by zero. |
+| `scorium::eval::arithmetic_overflow` | Integer arithmetic exceeded the supported 64-bit range. |
 | `scorium::eval::includes_disabled` | `include` used while the host disabled includes. |
 | `scorium::eval::include_path_denied` | An include path blocked by the host's path policy. |
 | `scorium::eval::include_cycle` | An include cycle detected at evaluation time, with the include chain. |
@@ -78,6 +79,7 @@ A diagnostic includes:
 | `scorium::eval::include_parse` | An included file failed to parse. |
 | `scorium::eval::script_error` | A `script { }` block raised a Lua error or hit the instruction budget. |
 | `scorium::eval::loop_budget_exceeded` | The total loop iteration count exceeded the sandbox limit. |
+| `scorium::eval::call_depth_exceeded` | Nested Scorium function calls exceeded the sandbox limit. |
 
 ## Schema (`scorium::schema`)
 

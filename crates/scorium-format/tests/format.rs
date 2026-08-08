@@ -44,6 +44,25 @@ fn arithmetic_gets_spaced_operators() {
 }
 
 #[test]
+fn parentheses_are_preserved_when_they_affect_meaning() {
+    let cases = [
+        ("value = (1 + 2) * 3", "value = (1 + 2) * 3\n"),
+        ("value = 1 - (2 - 3)", "value = 1 - (2 - 3)\n"),
+        ("value = -(1 + 2)", "value = -(1 + 2)\n"),
+        ("value = (a or b)(1)", "value = (a or b)(1)\n"),
+    ];
+    for (source, expected) in cases {
+        assert_eq!(fmt(source), expected, "source: {source}");
+        assert_idempotent(source);
+    }
+}
+
+#[test]
+fn redundant_parentheses_can_be_removed_safely() {
+    assert_eq!(fmt("value = 1 + (2 * 3)"), "value = 1 + 2 * 3\n");
+}
+
+#[test]
 fn colors_and_durations_round_trip() {
     let out = fmt("primary = #8EDDFF\ndelay = 600ms\ninterval = 1.5s");
     assert_eq!(out, "primary = #8EDDFF\ndelay = 600ms\ninterval = 1.5s\n");

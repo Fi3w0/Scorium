@@ -10,8 +10,9 @@
 //! grammar) at the cost of re-implementing Lua's statement semantics in
 //! Rust; see `docs/EMBEDDING.md` for the full rationale.
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 use std::rc::Rc;
 
 use scorium_core::ast::*;
@@ -38,6 +39,7 @@ pub(crate) struct Evaluator<'rt> {
     base_dir: PathBuf,
     ancestors: Vec<PathBuf>,
     loop_iterations: u64,
+    function_call_depth: u32,
     warnings: Vec<String>,
 }
 
@@ -52,6 +54,7 @@ impl<'rt> Evaluator<'rt> {
             base_dir,
             ancestors: Vec::new(),
             loop_iterations: 0,
+            function_call_depth: 0,
             warnings: Vec::new(),
         }
     }
@@ -240,14 +243,65 @@ impl<'rt> Evaluator<'rt> {
     fn exec_script(&mut self, block: &ScriptBlock, span: Span) -> Result<(), EvalError> {
         let lua = self.runtime.lua();
         let globals = lua.globals();
+        let env = lua.create_table().map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
+
+        // Each block receives a fresh environment. Copying the restricted
+        // base globals prevents one config (or an earlier block) from
+        // leaking globals into the next; copying library tables prevents
+        // `math.abs = ...`-style mutation from poisoning later blocks.
+        for pair in globals.clone().pairs::<mlua::Value, mlua::Value>() {
+            let (key, value) = pair.map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
+            if let mlua::Value::String(name) = &key {
+                // These base functions operate on state outside `_ENV` and
+                // would let one supposedly isolated block mutate the shared
+                // Lua VM (for example through the string metatable), disable
+                // garbage collection, or compile a chunk in the real global
+                // environment.
+                if ["_G", "collectgarbage", "getmetatable", "load"].iter().any(|blocked| name.as_bytes() == blocked.as_bytes()) {
+                    continue;
+                }
+            }
+            let value = match value {
+                mlua::Value::Table(table) => {
+                    let copy =
+                        lua.create_table().map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
+                    for entry in table.pairs::<mlua::Value, mlua::Value>() {
+                        let (k, v) = entry.map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
+                        copy.raw_set(k, v).map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
+                    }
+                    mlua::Value::Table(copy)
+                }
+                other => other,
+            };
+            env.raw_set(key, value).map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
+        }
+        env.set("_G", env.clone()).map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
+
         for (name, value) in self.scope.all_visible(self.runtime.registry()) {
             let lv = value_bridge::to_lua(lua, &value)
                 .map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
-            globals.set(name, lv).map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
+            env.set(name, lv).map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
+        }
+        for (name, function) in &self.runtime.registry().functions {
+            let lua_function = match function {
+                HostFunction::Native(function) => {
+                    let function = Rc::clone(function);
+                    lua.create_function(move |lua, args: mlua::MultiValue| {
+                        let args: Vec<Value> = args.iter().map(value_bridge::from_lua).collect();
+                        let result = function(&args).map_err(mlua::Error::RuntimeError)?;
+                        value_bridge::to_lua(lua, &result)
+                    })
+                }
+                HostFunction::Lua(function) => Ok(function.clone()),
+            }
+            .map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
+            env.set(name.as_str(), lua_function)
+                .map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
         }
         self.runtime.reset_script_budget();
         lua.load(&block.raw)
             .set_name("script")
+            .set_environment(env)
             .exec()
             .map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))
     }
@@ -258,10 +312,24 @@ impl<'rt> Evaluator<'rt> {
             return Err(self.err(EvalErrorKind::IncludesDisabled { span }));
         }
         let path_str = self.eval_strlit(&inc.path, inc.path_span)?;
-        if !options.include_policy.allow_parent_traversal && path_str.contains("..") {
+        let include_path = Path::new(&path_str);
+        if !options.include_policy.allow_parent_traversal
+            && (include_path.is_absolute() || include_path.components().any(|c| c == Component::ParentDir))
+        {
             return Err(self.err(EvalErrorKind::IncludePathDenied { path: path_str, span }));
         }
-        let resolved = self.base_dir.join(&path_str);
+        let resolved = self.base_dir.join(include_path);
+        // A relative path without `..` can still escape through a symlink.
+        // When the restrictive policy is active, compare canonical paths
+        // before opening the target. Missing targets continue to the normal
+        // IncludeIo diagnostic below.
+        if !options.include_policy.allow_parent_traversal {
+            if let (Ok(base), Ok(target)) = (self.base_dir.canonicalize(), resolved.canonicalize()) {
+                if !target.starts_with(&base) {
+                    return Err(self.err(EvalErrorKind::IncludePathDenied { path: path_str, span }));
+                }
+            }
+        }
         let canonical = resolved.canonicalize().unwrap_or_else(|_| resolved.clone());
         if self.ancestors.contains(&canonical) {
             let mut chain: Vec<String> = self.ancestors.iter().map(|p| p.display().to_string()).collect();
@@ -390,7 +458,9 @@ impl<'rt> Evaluator<'rt> {
         match op {
             UnOp::Not => Ok(Value::Bool(!v.is_truthy())),
             UnOp::Neg => match v {
-                Value::Int(i) => Ok(Value::Int(-i)),
+                Value::Int(i) => {
+                    i.checked_neg().map(Value::Int).ok_or_else(|| self.err(EvalErrorKind::ArithmeticOverflow { span }))
+                }
                 Value::Float(f) => Ok(Value::Float(-f)),
                 other => {
                     Err(self.err(EvalErrorKind::TypeError { message: format!("cannot negate a {}", other.type_name()), span }))
@@ -437,28 +507,42 @@ impl<'rt> Evaluator<'rt> {
     }
 
     fn eval_compare(&self, op: BinOp, l: &Value, r: &Value, span: Span) -> Result<Value, EvalError> {
-        let result = if let (Some(a), Some(b)) = (l.as_number(), r.as_number()) {
-            compare(op, a, b)
-        } else if let (Value::Str(a), Value::Str(b)) = (l, r) {
-            compare(op, a, b)
-        } else {
-            return Err(self.err(EvalErrorKind::TypeError {
-                message: format!("cannot compare {} and {}", l.type_name(), r.type_name()),
-                span,
-            }));
+        let ordering = match (l, r) {
+            (Value::Int(a), Value::Int(b)) => Some(a.cmp(b)),
+            (Value::Float(a), Value::Float(b)) => a.partial_cmp(b),
+            (Value::Int(a), Value::Float(b)) => cmp_int_float(*a, *b),
+            (Value::Float(a), Value::Int(b)) => cmp_int_float(*b, *a).map(Ordering::reverse),
+            (Value::Str(a), Value::Str(b)) => Some(a.cmp(b)),
+            _ => {
+                return Err(self.err(EvalErrorKind::TypeError {
+                    message: format!("cannot compare {} and {}", l.type_name(), r.type_name()),
+                    span,
+                }))
+            }
         };
-        Ok(Value::Bool(result))
+        // As in Lua, every ordered comparison involving NaN is false.
+        Ok(Value::Bool(ordering.is_some_and(|ordering| compare_ordering(op, ordering))))
     }
 
     fn eval_arith(&self, op: BinOp, l: &Value, r: &Value, span: Span) -> Result<Value, EvalError> {
         if let (Value::Int(a), Value::Int(b)) = (l, r) {
             return match op {
-                BinOp::Add => Ok(Value::Int(a.wrapping_add(*b))),
-                BinOp::Sub => Ok(Value::Int(a.wrapping_sub(*b))),
-                BinOp::Mul => Ok(Value::Int(a.wrapping_mul(*b))),
+                BinOp::Add => {
+                    a.checked_add(*b).map(Value::Int).ok_or_else(|| self.err(EvalErrorKind::ArithmeticOverflow { span }))
+                }
+                BinOp::Sub => {
+                    a.checked_sub(*b).map(Value::Int).ok_or_else(|| self.err(EvalErrorKind::ArithmeticOverflow { span }))
+                }
+                BinOp::Mul => {
+                    a.checked_mul(*b).map(Value::Int).ok_or_else(|| self.err(EvalErrorKind::ArithmeticOverflow { span }))
+                }
                 BinOp::Mod => {
                     if *b == 0 {
                         Err(self.err(EvalErrorKind::DivisionByZero { span }))
+                    } else if *b == -1 {
+                        // The mathematical result is zero, but Rust's `%`
+                        // operation overflows for i64::MIN / -1.
+                        Ok(Value::Int(0))
                     } else {
                         Ok(Value::Int(a.rem_euclid(*b)))
                     }
@@ -512,7 +596,7 @@ impl<'rt> Evaluator<'rt> {
         };
         let arg_vals = args.iter().map(|a| self.eval_expr(a)).collect::<Result<Vec<_>, _>>()?;
         if let Some(fn_def) = self.functions.get(name).cloned() {
-            return self.call_user_fn(&fn_def, &arg_vals);
+            return self.call_user_fn(&fn_def, &arg_vals, span);
         }
         self.call_host(name, &arg_vals, span)
     }
@@ -520,12 +604,26 @@ impl<'rt> Evaluator<'rt> {
     fn call_method(&self, base: Value, field: &str, args: &[Value], span: Span) -> Result<Value, EvalError> {
         match base {
             Value::Color(c) => {
-                let amount = args.first().and_then(|v| v.as_number()).unwrap_or(0.0);
+                if !matches!(field, "darken" | "lighten" | "alpha") {
+                    return Err(self.err(EvalErrorKind::TypeError { message: format!("color has no method `{field}`"), span }));
+                }
+                if args.len() != 1 {
+                    return Err(self.err(EvalErrorKind::TypeError {
+                        message: format!("color.{field}() expects exactly one numeric argument"),
+                        span,
+                    }));
+                }
+                let amount = args[0].as_number().ok_or_else(|| {
+                    self.err(EvalErrorKind::TypeError {
+                        message: format!("color.{field}() expects a number, found {}", args[0].type_name()),
+                        span,
+                    })
+                })?;
                 match field {
                     "darken" => Ok(Value::Color(c.darken(amount))),
                     "lighten" => Ok(Value::Color(c.lighten(amount))),
                     "alpha" => Ok(Value::Color(c.alpha(amount))),
-                    other => Err(self.err(EvalErrorKind::TypeError { message: format!("color has no method `{other}`"), span })),
+                    _ => unreachable!("known color method checked above"),
                 }
             }
             other => {
@@ -535,13 +633,19 @@ impl<'rt> Evaluator<'rt> {
         }
     }
 
-    fn call_user_fn(&mut self, f: &FnDef, args: &[Value]) -> Result<Value, EvalError> {
+    fn call_user_fn(&mut self, f: &FnDef, args: &[Value], span: Span) -> Result<Value, EvalError> {
+        let limit = self.runtime.options().max_function_call_depth;
+        if self.function_call_depth >= limit {
+            return Err(self.err(EvalErrorKind::CallDepthExceeded { limit, span }));
+        }
+        self.function_call_depth += 1;
         self.scope.push();
         for (i, p) in f.params.iter().enumerate() {
             self.scope.set_local(p.clone(), args.get(i).cloned().unwrap_or(Value::Nil));
         }
         let flow = self.exec_items(&f.body);
         self.scope.pop();
+        self.function_call_depth -= 1;
         Ok(match flow? {
             Flow::Return(v) => v.unwrap_or(Value::Nil),
             Flow::Normal => Value::Nil,
@@ -557,8 +661,9 @@ impl<'rt> Evaluator<'rt> {
                     .map(|v| value_bridge::to_lua(self.runtime.lua(), v))
                     .collect::<mlua::Result<_>>()
                     .map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
-                let result: mlua::MultiValue =
-                    f.call(lua_args).map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
+                let result: mlua::MultiValue = f
+                    .call(mlua::MultiValue::from_vec(lua_args))
+                    .map_err(|e| self.err(EvalErrorKind::ScriptError { message: e.to_string(), span }))?;
                 let first = result.into_iter().next().unwrap_or(mlua::Value::Nil);
                 Ok(value_bridge::from_lua(&first))
             }
@@ -593,17 +698,41 @@ impl<'rt> Evaluator<'rt> {
 
 fn values_equal(l: &Value, r: &Value) -> bool {
     match (l, r) {
-        (Value::Int(a), Value::Float(b)) | (Value::Float(b), Value::Int(a)) => (*a as f64) == *b,
+        (Value::Int(a), Value::Float(b)) | (Value::Float(b), Value::Int(a)) => cmp_int_float(*a, *b) == Some(Ordering::Equal),
         _ => l == r,
     }
 }
 
-fn compare<T: PartialOrd>(op: BinOp, a: T, b: T) -> bool {
+/// Exact ordering between an i64 and f64 without first rounding the integer
+/// to f64. That rounding would incorrectly make 9_007_199_254_740_993 equal
+/// to 9_007_199_254_740_992.0.
+fn cmp_int_float(integer: i64, float: f64) -> Option<Ordering> {
+    if float.is_nan() {
+        return None;
+    }
+    const I64_MIN_AS_F64: f64 = -9_223_372_036_854_775_808.0;
+    const I64_MAX_PLUS_ONE_AS_F64: f64 = 9_223_372_036_854_775_808.0;
+    if float < I64_MIN_AS_F64 {
+        return Some(Ordering::Greater);
+    }
+    if float >= I64_MAX_PLUS_ONE_AS_F64 {
+        return Some(Ordering::Less);
+    }
+
+    let truncated = float.trunc() as i64;
+    match integer.cmp(&truncated) {
+        Ordering::Equal if float.fract() > 0.0 => Some(Ordering::Less),
+        Ordering::Equal if float.fract() < 0.0 => Some(Ordering::Greater),
+        ordering => Some(ordering),
+    }
+}
+
+fn compare_ordering(op: BinOp, ordering: Ordering) -> bool {
     match op {
-        BinOp::Lt => a < b,
-        BinOp::Gt => a > b,
-        BinOp::LtEq => a <= b,
-        BinOp::GtEq => a >= b,
+        BinOp::Lt => ordering == Ordering::Less,
+        BinOp::Gt => ordering == Ordering::Greater,
+        BinOp::LtEq => ordering != Ordering::Greater,
+        BinOp::GtEq => ordering != Ordering::Less,
         _ => unreachable!("non-comparison op reached compare()"),
     }
 }

@@ -21,6 +21,10 @@ pub enum TokenKind {
     /// The numeric part and the unit suffix (`ms`, `s`, `m`) of a duration
     /// literal, kept apart so the parser doesn't need to re-split it.
     DurationLit(f64, String),
+    /// Raw bytes between a `script {` opener and its matching `}`. The
+    /// lexer recognizes Lua strings/comments only to balance braces; the
+    /// parser passes the original source slice through unchanged.
+    ScriptBody,
 
     // Keywords
     If,
@@ -96,6 +100,7 @@ impl TokenKind {
             TokenKind::BareWord(s) => s.clone(),
             TokenKind::ColorLit(h) => format!("#{h}"),
             TokenKind::DurationLit(n, u) => format!("{n}{u}"),
+            TokenKind::ScriptBody => "script body".into(),
             TokenKind::If => "if".into(),
             TokenKind::Elseif => "elseif".into(),
             TokenKind::Else => "else".into(),

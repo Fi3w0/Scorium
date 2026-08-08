@@ -17,9 +17,9 @@ use crate::registry::Registry;
 #[derive(Debug, Clone)]
 pub struct IncludePolicy {
     pub enabled: bool,
-    /// If `false` (the default), an include path containing `..` is
+    /// If `false` (the default), include paths with a `..` component are
     /// rejected rather than allowed to walk above the including file's
-    /// directory.
+    /// directory. Absolute paths and symlink escapes are rejected too.
     pub allow_parent_traversal: bool,
 }
 
@@ -35,13 +35,25 @@ pub struct RuntimeOptions {
     /// Total `for`/`while` loop iterations allowed across one
     /// evaluation, as a sandbox limit against runaway config scripts.
     pub max_loop_iterations: u64,
+    /// Maximum nesting depth for calls to Scorium `fn` definitions.
+    pub max_function_call_depth: u32,
     /// Lua VM instructions allowed per `script { }` block.
     pub max_script_instructions: u64,
+    /// Maximum bytes the restricted Lua state may allocate. This caps
+    /// strings, tables, compiled chunks, and other Lua-owned memory across
+    /// an evaluation runtime. Set to `0` to disable the memory limit.
+    pub max_lua_memory_bytes: usize,
 }
 
 impl Default for RuntimeOptions {
     fn default() -> Self {
-        Self { include_policy: IncludePolicy::default(), max_loop_iterations: 1_000_000, max_script_instructions: 50_000_000 }
+        Self {
+            include_policy: IncludePolicy::default(),
+            max_loop_iterations: 1_000_000,
+            max_function_call_depth: 256,
+            max_script_instructions: 50_000_000,
+            max_lua_memory_bytes: 64 * 1024 * 1024,
+        }
     }
 }
 
@@ -68,6 +80,7 @@ impl Runtime {
 
     pub fn with_options(options: RuntimeOptions) -> Result<Self, mlua::Error> {
         let lua = Lua::new_with(StdLib::MATH | StdLib::STRING | StdLib::TABLE, LuaOptions::default())?;
+        lua.set_memory_limit(options.max_lua_memory_bytes)?;
         let budget = Rc::new(Cell::new(options.max_script_instructions));
         {
             let budget = budget.clone();
@@ -115,7 +128,10 @@ impl Runtime {
         &self.options
     }
 
-    pub(crate) fn lua(&self) -> &Lua {
+    /// Accesses the restricted Lua state for advanced host integration,
+    /// primarily to create a function for [`Self::register_lua_function`].
+    /// Values created by a different [`Lua`] state cannot be registered.
+    pub fn lua(&self) -> &Lua {
         &self.lua
     }
 

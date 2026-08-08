@@ -27,6 +27,20 @@ versions.
 ### Changed
 - `scorium-cli` now depends only on the crates and tools it actually uses.
 
+### Fixed
+- Preserve expression grouping when formatting, so `scorium fmt` cannot
+  change precedence or associativity.
+- Enforce include containment for absolute paths, `..` components, and
+  symlink escapes under the default policy.
+- Expose registered native and Lua host functions inside isolated
+  `script { }` environments without leaking global or library mutations.
+- Report integer overflow instead of wrapping or panicking, and compare
+  mixed integers/floats without precision loss.
+- Bound Lua memory and recursive Scorium function depth.
+- Preserve text following interpolated Unicode variable names.
+- Treat `script { }` contents as raw Lua during lexing, including compact
+  operators and Lua long-bracket strings/comments containing braces.
+
 ### Notes
 - Scorium is source-available under PolyForm Strict 1.0.0 and is **not**
   OSI-approved open source. See `docs/LICENSING.md`.

@@ -105,6 +105,15 @@ fn bare_string_interpolation_parts() {
 }
 
 #[test]
+fn unicode_interpolation_does_not_consume_following_text() {
+    let doc = parse_ok("binding = $café-x");
+    let ItemKind::Leaf(leaf) = &doc.items[0].kind else { panic!() };
+    let ExprKind::Str(StrLit::Bare(parts)) = &leaf.value.kind else { panic!() };
+    assert!(matches!(&parts[0], StrPart::Interp(name, _) if name == "café"));
+    assert!(matches!(&parts[1], StrPart::Lit(text) if text == "-x"));
+}
+
+#[test]
 fn variable_definition() {
     let doc = parse_ok("@mod = SUPER");
     let ItemKind::VarDef(v) = &doc.items[0].kind else { panic!() };
@@ -253,6 +262,19 @@ fn script_block_with_braces_and_lua_strings() {
     );
     let ItemKind::Script(s) = &doc.items[0].kind else { panic!() };
     assert!(s.raw.contains("x{y}z"));
+}
+
+#[test]
+fn script_body_supports_compact_lua_and_long_brackets() {
+    let doc = parse_ok(
+        r#"script { local ratio=a/b; local text=[==[ } still text ]==]; --[=[ } still comment ]=]
+return {value=ratio} }"#,
+    );
+    let ItemKind::Script(s) = &doc.items[0].kind else { panic!() };
+    assert!(s.raw.contains("ratio=a/b"));
+    assert!(s.raw.contains("[==[ } still text ]==]"));
+    assert!(s.raw.contains("--[=[ } still comment ]=]"));
+    assert!(s.raw.contains("return {value=ratio}"));
 }
 
 #[test]

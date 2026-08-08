@@ -38,26 +38,35 @@ with **only** these standard libraries:
 There is no `os.execute`, no `io.open`, no `package.loadlib`, no
 `debug.getregistry`. The globals table is the only one exposed, and it
 contains only the safe libraries plus the host-registered values/functions
-in scope for that block.
+in scope for that block. State-wide base functions that bypass an isolated
+block environment (`collectgarbage`, `getmetatable`, and `load`) are also
+removed.
 
 ### Resource limits
 
 | Limit | Default | Controlled by |
 | --- | --- | --- |
 | Total loop iterations per evaluation | 1,000,000 | `RuntimeOptions::max_loop_iterations` |
+| Nested Scorium `fn` calls | 256 | `RuntimeOptions::max_function_call_depth` |
 | Lua VM instructions per `script { }` block | 50,000,000 | `RuntimeOptions::max_script_instructions` |
+| Lua-owned memory per runtime | 64 MiB | `RuntimeOptions::max_lua_memory_bytes` |
 
 The instruction limit is enforced by an instruction-counting hook that fires
 on every 1000th VM instruction; exceeding it raises a `script_error`. The
 loop limit is checked once per iteration and raises `loop_budget_exceeded`.
+The call-depth limit prevents recursive Scorium functions from overflowing
+the host's Rust stack.
+Lua's allocator enforces the memory limit across strings, tables, and
+compiled chunks; allocation failure is reported as a `script_error`.
 
 ### Includes
 
 `include "..."` is mediated by the host's `IncludePolicy`:
 
 - `enabled` (default `true`) -- the host can turn includes off entirely.
-- `allow_parent_traversal` (default `false`) -- when `false`, an include path
-  containing `..` is rejected before any filesystem access.
+- `allow_parent_traversal` (default `false`) -- when `false`, absolute paths,
+  `..` path components, and symlinks that resolve outside the including
+  file's directory are rejected.
 - Include **cycles** are detected and reported with the full include chain.
 - Relative paths resolve against the including file's directory.
 

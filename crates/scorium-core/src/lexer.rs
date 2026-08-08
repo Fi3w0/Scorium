@@ -45,12 +45,118 @@ impl<'a> Lexer<'a> {
         loop {
             let tok = self.next_token()?;
             let is_eof = tok.kind == TokenKind::Eof;
+            let starts_script_body = matches!(tok.kind, TokenKind::LBrace)
+                && tokens.iter().rev().find(|t: &&Token| !t.kind.is_comment()).is_some_and(|t| t.kind == TokenKind::Script);
             tokens.push(tok);
+            if starts_script_body {
+                tokens.push(self.scan_script_body()?);
+            }
             if is_eof {
                 break;
             }
         }
         Ok(tokens)
+    }
+
+    /// Captures a raw Lua script body up to its matching outer `}`. Lua
+    /// short strings, line comments, and long-bracket strings/comments are
+    /// skipped while balancing braces so their contents remain truly raw
+    /// rather than being interpreted as Scorium tokens.
+    fn scan_script_body(&mut self) -> Result<Token, SyntaxError> {
+        let start = self.pos;
+        let mut depth = 1usize;
+        while !self.eof() {
+            match self.current().expect("checked eof") {
+                '\'' | '"' => self.skip_lua_short_string(),
+                '-' if self.peek(1) == Some('-') => {
+                    let comment_start = self.pos;
+                    self.pos += 2;
+                    if let Some((equals, opener_len)) = self.lua_long_bracket_at(self.pos) {
+                        self.skip_lua_long_bracket(equals, opener_len, comment_start as u32)?;
+                    } else {
+                        while self.current().is_some_and(|c| c != '\n') {
+                            self.advance();
+                        }
+                    }
+                }
+                '[' => {
+                    if let Some((equals, opener_len)) = self.lua_long_bracket_at(self.pos) {
+                        self.skip_lua_long_bracket(equals, opener_len, self.pos as u32)?;
+                    } else {
+                        self.advance();
+                    }
+                }
+                '{' => {
+                    depth += 1;
+                    self.advance();
+                }
+                '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return Ok(Token::new(TokenKind::ScriptBody, Span::new(start as u32, self.pos as u32)));
+                    }
+                    self.advance();
+                }
+                _ => {
+                    self.advance();
+                }
+            }
+        }
+        Err(SyntaxError::UnexpectedEof {
+            context: "`}` to close the `script` body".into(),
+            span: Span::new(start as u32, self.pos as u32),
+        })
+    }
+
+    fn skip_lua_short_string(&mut self) {
+        let quote = self.advance().expect("called at a quote");
+        while let Some(c) = self.advance() {
+            if c == '\\' {
+                self.advance();
+            } else if c == quote {
+                break;
+            }
+        }
+    }
+
+    /// Returns the number of `=` markers and byte length of a Lua long
+    /// bracket opener (`[[`, `[=[`, `[==[`, ...), if one starts at `pos`.
+    fn lua_long_bracket_at(&self, pos: usize) -> Option<(usize, usize)> {
+        if self.char_at(pos)? != '[' {
+            return None;
+        }
+        let mut cursor = pos + 1;
+        let mut equals = 0usize;
+        while self.char_at(cursor) == Some('=') {
+            cursor += 1;
+            equals += 1;
+        }
+        (self.char_at(cursor) == Some('[')).then_some((equals, cursor + 1 - pos))
+    }
+
+    fn skip_lua_long_bracket(&mut self, equals: usize, opener_len: usize, start: u32) -> Result<(), SyntaxError> {
+        self.pos += opener_len;
+        while !self.eof() {
+            if self.current() == Some(']') {
+                let mut cursor = self.pos + 1;
+                for _ in 0..equals {
+                    if self.char_at(cursor) != Some('=') {
+                        cursor = self.pos;
+                        break;
+                    }
+                    cursor += 1;
+                }
+                if cursor != self.pos && self.char_at(cursor) == Some(']') {
+                    self.pos = cursor + 1;
+                    return Ok(());
+                }
+            }
+            self.advance();
+        }
+        Err(SyntaxError::UnexpectedEof {
+            context: "a closing Lua long bracket in the `script` body".into(),
+            span: Span::new(start, self.pos as u32),
+        })
     }
 
     fn eof(&self) -> bool {

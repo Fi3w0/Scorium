@@ -199,6 +199,19 @@ impl Printer<'_> {
     }
 
     fn print_expr(&mut self, expr: &Expr) {
+        self.print_expr_prec(expr, 0);
+    }
+
+    /// Prints an expression with only the parentheses needed to preserve
+    /// the AST's precedence and associativity. The parser deliberately
+    /// drops grouping nodes, so ignoring precedence here can turn
+    /// `(a + b) * c` into the meaningfully different `a + b * c`.
+    fn print_expr_prec(&mut self, expr: &Expr, min_prec: u8) {
+        let prec = expr_precedence(expr);
+        let parenthesize = prec < min_prec;
+        if parenthesize {
+            self.out.push('(');
+        }
         match &expr.kind {
             ExprKind::Int(n) => self.out.push_str(&n.to_string()),
             ExprKind::Float(n) => self.out.push_str(&format_float(*n)),
@@ -219,7 +232,7 @@ impl Printer<'_> {
                     if i > 0 {
                         self.out.push_str(", ");
                     }
-                    self.print_expr(item);
+                    self.print_expr_prec(item, 0);
                 }
                 self.out.push(']');
             }
@@ -229,32 +242,67 @@ impl Printer<'_> {
                     UnOp::Neg => self.out.push('-'),
                     UnOp::Not => self.out.push_str("not "),
                 }
-                self.print_expr(operand);
+                self.print_expr_prec(operand, PREC_UNARY);
             }
             ExprKind::Binary(op, l, r) => {
-                self.print_expr(l);
+                let op_prec = binop_precedence(*op);
+                self.print_expr_prec(l, op_prec);
                 self.out.push(' ');
                 self.out.push_str(binop_symbol(*op));
                 self.out.push(' ');
-                self.print_expr(r);
+                // All binary operators are left-associative. Requiring a
+                // strictly higher precedence on the right preserves an
+                // explicitly grouped right child such as `a - (b - c)`.
+                self.print_expr_prec(r, op_prec + 1);
             }
             ExprKind::Call(callee, args) => {
-                self.print_expr(callee);
+                self.print_expr_prec(callee, PREC_POSTFIX);
                 self.out.push('(');
                 for (i, arg) in args.iter().enumerate() {
                     if i > 0 {
                         self.out.push_str(", ");
                     }
-                    self.print_expr(arg);
+                    self.print_expr_prec(arg, 0);
                 }
                 self.out.push(')');
             }
             ExprKind::Member(base, field, _) => {
-                self.print_expr(base);
+                self.print_expr_prec(base, PREC_POSTFIX);
                 self.out.push('.');
                 self.out.push_str(field);
             }
         }
+        if parenthesize {
+            self.out.push(')');
+        }
+    }
+}
+
+const PREC_OR: u8 = 1;
+const PREC_AND: u8 = 3;
+const PREC_COMPARE: u8 = 5;
+const PREC_ADD: u8 = 7;
+const PREC_MUL: u8 = 9;
+const PREC_UNARY: u8 = 11;
+const PREC_POSTFIX: u8 = 13;
+const PREC_PRIMARY: u8 = 15;
+
+fn expr_precedence(expr: &Expr) -> u8 {
+    match &expr.kind {
+        ExprKind::Binary(op, _, _) => binop_precedence(*op),
+        ExprKind::Unary(_, _) => PREC_UNARY,
+        ExprKind::Call(_, _) | ExprKind::Member(_, _, _) => PREC_POSTFIX,
+        _ => PREC_PRIMARY,
+    }
+}
+
+fn binop_precedence(op: BinOp) -> u8 {
+    match op {
+        BinOp::Or => PREC_OR,
+        BinOp::And => PREC_AND,
+        BinOp::Eq | BinOp::NotEq | BinOp::Lt | BinOp::Gt | BinOp::LtEq | BinOp::GtEq => PREC_COMPARE,
+        BinOp::Add | BinOp::Sub => PREC_ADD,
+        BinOp::Mul | BinOp::Div | BinOp::Mod => PREC_MUL,
     }
 }
 

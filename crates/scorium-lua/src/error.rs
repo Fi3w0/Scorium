@@ -39,6 +39,13 @@ pub enum EvalErrorKind {
         span: Span,
     },
 
+    #[error("integer arithmetic overflow")]
+    #[diagnostic(code(scorium::eval::arithmetic_overflow), help("use smaller integer operands or a float"))]
+    ArithmeticOverflow {
+        #[label("this operation exceeds the integer range")]
+        span: Span,
+    },
+
     #[error("`include` is disabled by the host application")]
     #[diagnostic(code(scorium::eval::includes_disabled))]
     IncludesDisabled {
@@ -96,6 +103,14 @@ pub enum EvalErrorKind {
     LoopBudgetExceeded {
         limit: u64,
         #[label("still looping here")]
+        span: Span,
+    },
+
+    #[error("function call depth exceeded ({limit}); this function may recurse forever")]
+    #[diagnostic(code(scorium::eval::call_depth_exceeded), help("Scorium caps nested `fn` calls as a sandbox limit"))]
+    CallDepthExceeded {
+        limit: u32,
+        #[label("called too deeply here")]
         span: Span,
     },
 }

@@ -120,9 +120,11 @@ runtime.register_function("double", |args| match args.first() {
 });
 
 // A function implemented in Lua itself can also be registered through the
-// same registry, via `Runtime::register_lua_function(name, mlua::Function)`.
-// This is an advanced path for hosts that already bridge to mlua; most hosts
-// only need `register_value` and `register_function` above.
+// same registry. Create it in this Runtime's restricted Lua state (values
+// cannot cross between independent mlua states):
+let lua_double = runtime.lua().create_function(|_, n: i64| Ok(n * 2))?;
+runtime.register_lua_function("lua_double", lua_double);
+// This is an advanced path; most hosts only need the two methods above.
 ```
 
 `register_value` and `register_function` cover the vast majority of hosts.
@@ -246,10 +248,12 @@ use scorium_lua::{RuntimeOptions, IncludePolicy};
 let options = RuntimeOptions {
     include_policy: IncludePolicy {
         enabled: true,
-        allow_parent_traversal: false, // default: `..` in include paths is denied
+        allow_parent_traversal: false, // denies absolute, `..`, and symlink escapes
     },
-    max_loop_iterations: 1_000_000,    // total loop iters per evaluation
+    max_loop_iterations: 1_000_000,      // total loop iters per evaluation
+    max_function_call_depth: 256,        // nested Scorium `fn` calls
     max_script_instructions: 50_000_000, // Lua VM instrs per script block
+    max_lua_memory_bytes: 64 * 1024 * 1024, // Lua-owned memory per runtime
 };
 ```
 
