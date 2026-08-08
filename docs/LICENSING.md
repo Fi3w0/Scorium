@@ -27,6 +27,11 @@ them.
 | Ship binaries built from it | **No** |
 | Maintain an independent renamed fork | **No** |
 
+This table describes what *you*, a licensee, may do without a separate
+agreement. It does not restrict @fi3w0 as copyright holder: official Scorium
+crates are published to [crates.io](https://crates.io/crates/scorium-cli) by
+the project owner. See [Official releases and status](../TRADEMARKS.md#official-releases-and-status).
+
 ---
 
 ## The license

@@ -136,8 +136,20 @@ Read the [language guide](./docs/LANGUAGE.md) for the rest.
 
 ## Install and use
 
-Build the CLI from source (Scorium is not published to a package registry --
-see [Licensing](#licensing)):
+Install the CLI from the official crates.io release:
+
+```bash
+cargo install scorium-cli
+scorium check examples/basic.scor
+```
+
+Or, to embed the libraries in your own project:
+
+```bash
+cargo add scorium-core scorium-lua scorium-schema
+```
+
+Or build from source:
 
 ```bash
 cargo build -p scorium-cli
@@ -147,6 +159,9 @@ cargo run -p scorium-cli -- fmt --check examples/basic.scor
 cargo run -p scorium-cli -- parse examples/variables.scor
 cargo run -p scorium-cli -- eval examples/conditions.scor
 ```
+
+Only @fi3w0 publishes official Scorium releases; see
+[Licensing](#licensing).
 
 | Command | Does |
 | --- | --- |
@@ -221,9 +236,10 @@ Scorium is **source-available** under the
 educational, hobby, and local noncommercial use, and for contribution-focused
 forks. **Commercial use requires a written agreement.**
 
-Scorium is *not* OSI-approved open source, and is not published to a package
-registry. See [docs/LICENSING.md](./docs/LICENSING.md),
-[COMMERCIAL.md](./COMMERCIAL.md), and [TRADEMARKS.md](./TRADEMARKS.md).
+Scorium is *not* OSI-approved open source. Only official releases published
+by @fi3w0 (crates.io, GitHub Releases) are sanctioned distribution channels;
+see [docs/LICENSING.md](./docs/LICENSING.md), [COMMERCIAL.md](./COMMERCIAL.md),
+and [TRADEMARKS.md](./TRADEMARKS.md).
 
 > The legal files are initial project terms that have not been reviewed by a
 > lawyer. Obtain professional legal review before relying on them for

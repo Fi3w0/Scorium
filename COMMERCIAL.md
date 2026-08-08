@@ -61,9 +61,11 @@ commercial agreement, you do not have permission.
 ## Reselling and redistribution
 
 Independent binary distribution, package-registry publication (for example
-crates.io), and selling Scorium or a derivative are **not permitted** under
-the noncommercial license under any circumstances, and require explicit
-written permission even within a commercial agreement.
+crates.io) by anyone other than the project owner, and selling Scorium or a
+derivative are **not permitted** under the noncommercial license under any
+circumstances, and require explicit written permission even within a
+commercial agreement. Official crates.io releases published by @fi3w0 are
+not "independent" distribution.
 
 ---
 
