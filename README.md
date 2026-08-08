@@ -1,5 +1,11 @@
 # Scorium
 
+[![Rust](https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Status](https://img.shields.io/badge/status-pre--1.0-8EDDFF?style=flat-square)](./docs/ROADMAP.md)
+[![Source Available](https://img.shields.io/badge/source-available-8EDDFF?style=flat-square)](./LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/Fi3w0/Scorium?style=flat-square&logo=github)](https://github.com/Fi3w0/Scorium/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/Fi3w0/Scorium?style=flat-square&logo=github)](https://github.com/Fi3w0/Scorium/issues)
+
 **Readable on the surface. Programmable when you need it.**
 
 Scorium is a readable, programmable configuration framework. It keeps
